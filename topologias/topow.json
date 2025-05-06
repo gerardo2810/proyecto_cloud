@@ -1,0 +1,50 @@
+{
+  "nombre": "topow",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_topow",
+      "worker": "10.0.10.2",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          182,
+          "1_182"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm2_topow",
+      "worker": "10.0.10.2",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          182,
+          "2_182"
+        ],
+        [
+          220,
+          "2_220"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm3_topow",
+      "worker": "10.0.10.3",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          220,
+          "3_220"
+        ]
+      ]
+    }
+  ],
+  "vlans": [
+    182,
+    220
+  ]
+}

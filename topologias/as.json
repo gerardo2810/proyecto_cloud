@@ -1,0 +1,33 @@
+{
+  "nombre": "as",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_as",
+      "worker": "10.0.10.2",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          57,
+          "1_57"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm2_as",
+      "worker": "10.0.10.2",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          57,
+          "2_57"
+        ]
+      ]
+    }
+  ],
+  "vlans": [
+    57
+  ]
+}

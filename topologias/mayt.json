@@ -1,0 +1,47 @@
+{
+  "nombre": "mayt",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_mayt",
+      "worker": "10.0.10.2",
+      "vnc": 1,
+      "interfaces": [
+        [
+          245,
+          "1_245"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm2_mayt",
+      "worker": "10.0.10.2",
+      "vnc": 2,
+      "interfaces": [
+        [
+          245,
+          "2_245"
+        ],
+        [
+          97,
+          "2_97"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm3_mayt",
+      "worker": "10.0.10.3",
+      "vnc": 3,
+      "interfaces": [
+        [
+          97,
+          "3_97"
+        ]
+      ]
+    }
+  ],
+  "vlans": [
+    245,
+    97
+  ]
+}

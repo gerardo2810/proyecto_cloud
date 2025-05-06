@@ -1,0 +1,40 @@
+{
+  "nombre": "pow",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_pow",
+      "worker": "10.0.10.2",
+      "vnc": 1,
+      "interfaces": [
+        [
+          58,
+          "1_58"
+        ],
+        [
+          22,
+          "1_22"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm2_pow",
+      "worker": "10.0.10.2",
+      "vnc": 2,
+      "interfaces": [
+        [
+          58,
+          "2_58"
+        ],
+        [
+          22,
+          "2_22"
+        ]
+      ]
+    }
+  ],
+  "vlans": [
+    58,
+    22
+  ]
+}

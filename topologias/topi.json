@@ -1,0 +1,31 @@
+{
+  "nombre": "topi",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_topi",
+      "worker": "10.0.10.2",
+      "vnc": 1,
+      "interfaces": [
+        [
+          90,
+          "1_90"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm2_topi",
+      "worker": "10.0.10.2",
+      "vnc": 2,
+      "interfaces": [
+        [
+          90,
+          "2_90"
+        ]
+      ]
+    }
+  ],
+  "vlans": [
+    90
+  ]
+}

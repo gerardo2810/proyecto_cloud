@@ -1,0 +1,50 @@
+{
+  "nombre": "tox",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_tox",
+      "worker": "10.0.10.2",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          23,
+          "1_23"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm2_tox",
+      "worker": "10.0.10.2",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          23,
+          "2_23"
+        ],
+        [
+          107,
+          "2_107"
+        ]
+      ]
+    },
+    {
+      "nombre": "vm3_tox",
+      "worker": "10.0.10.3",
+      "vnc": 0,
+      "puerto_real": 5900,
+      "interfaces": [
+        [
+          107,
+          "3_107"
+        ]
+      ]
+    }
+  ],
+  "vlans": [
+    23,
+    107
+  ]
+}
