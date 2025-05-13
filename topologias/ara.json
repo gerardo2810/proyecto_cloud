@@ -1,31 +1,31 @@
 {
-  "nombre": "as",
+  "nombre": "ara",
   "tipo": "lineal",
   "vms": [
     {
-      "nombre": "vm1_as",
+      "nombre": "vm1_ara",
       "worker": "10.0.10.2",
       "vnc": 1,
       "interfaces": [
         [
-          150,
-          "1_150"
+          151,
+          "1_151"
         ]
       ]
     },
     {
-      "nombre": "vm2_as",
+      "nombre": "vm2_ara",
       "worker": "10.0.10.2",
       "vnc": 2,
       "interfaces": [
         [
-          150,
-          "2_150"
+          151,
+          "2_151"
         ]
       ]
     }
   ],
   "vlans": [
-    150
+    151
   ]
 }
