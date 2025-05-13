@@ -1,31 +1,31 @@
 {
-  "nombre": "as",
+  "nombre": "dcr",
   "tipo": "lineal",
   "vms": [
     {
-      "nombre": "vm1_as",
+      "nombre": "vm1_dcr",
       "worker": "10.0.10.2",
       "vnc": 1,
       "interfaces": [
         [
-          150,
-          "1_150"
+          146,
+          "1_146"
         ]
       ]
     },
     {
-      "nombre": "vm2_as",
+      "nombre": "vm2_dcr",
       "worker": "10.0.10.2",
       "vnc": 2,
       "interfaces": [
         [
-          150,
-          "2_150"
+          146,
+          "2_146"
         ]
       ]
     }
   ],
   "vlans": [
-    150
+    146
   ]
 }

@@ -1,31 +1,40 @@
 {
-  "nombre": "as",
+  "nombre": "hola",
   "tipo": "lineal",
   "vms": [
     {
-      "nombre": "vm1_as",
+      "nombre": "vm1_hola",
       "worker": "10.0.10.2",
       "vnc": 1,
       "interfaces": [
         [
-          150,
-          "1_150"
+          45,
+          "1_45"
+        ],
+        [
+          55,
+          "1_55"
         ]
       ]
     },
     {
-      "nombre": "vm2_as",
+      "nombre": "vm2_hola",
       "worker": "10.0.10.2",
       "vnc": 2,
       "interfaces": [
         [
-          150,
-          "2_150"
+          45,
+          "2_45"
+        ],
+        [
+          55,
+          "2_55"
         ]
       ]
     }
   ],
   "vlans": [
-    150
+    45,
+    55
   ]
 }
