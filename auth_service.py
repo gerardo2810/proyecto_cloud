@@ -10,7 +10,7 @@ import datetime
 # Clave secreta para firmar el JWT
 SECRET_KEY = "cloud_grupo2_santivanez_proyecto"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 240  # Token expirará en 240 minutos
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expirará en 240 minutos
 
 # Configuración para la conexión SSH
 SSH_HOST = "10.20.12.51"
