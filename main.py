@@ -32,13 +32,19 @@ def login():
 ██║     ╚██████╔╝╚██████╗██║     ██████╔╝███████╗██║     ███████╗███████╗   ██║   
 ╚═╝      ╚═════╝  ╚═════╝╚═╝     ╚═════╝ ╚══════╝╚═╝     ╚══════╝╚══════╝   ╚═╝   
     """)
-    print("==== Bienvenido a PUCPDEPLOY ====")
-    usuario = input("👤 Usuario: ")
-    clave = getpass.getpass("🔐 Contraseña: ")
-    if usuario in USUARIOS and USUARIOS[usuario]["password"] == clave:
-        print(f"\n✅ Acceso concedido como {USUARIOS[usuario]['rol']}\n")
-        return usuario, USUARIOS[usuario]["rol"]
-    print("\n❌ Credenciales incorrectas.\n")
+    print("==== Bienvenido a PUCPDEPLOYER ====")
+    
+    intentos = 3
+    while intentos > 0:
+        usuario = input("👤 Usuario: ")
+        clave = getpass.getpass("🔐 Contraseña: ")
+        if usuario in USUARIOS and USUARIOS[usuario]["password"] == clave:
+            print(f"\n✅ Acceso concedido como {USUARIOS[usuario]['rol']}\n")
+            return usuario, USUARIOS[usuario]["rol"]
+        intentos -= 1
+        print(f"\n❌ Credenciales incorrectas. Quedan {intentos} intentos.\n")
+    
+    print("\n❌ Se agotaron los intentos. Programa terminado.\n")
     sys.exit(1)
 
 def menu_principal():
@@ -56,11 +62,25 @@ def input_num(msg):
             return int(val)
         print("❗ Ingrese solo números.")
 
+def validar_cirros_cpu(cpu):
+    if cpu != 1:
+        print("❌ Para Cirros, CPU debe ser exactamente 1")
+        return False
+    return True
+
+def validar_cirros_rango(valor, campo):
+    if not (300 <= valor <= 700):
+        print(f"❌ Para Cirros, {campo} debe estar entre 300 y 700 MB")
+        return False
+    return True
+
 def crear_topologia():
-    nombre = input("\n📛 Nombre de la topología (solo letras y números): ").strip()
-    if not nombre.isalnum():
-        print("❌ Nombre no válido. Solo letras y números sin espacios.")
-        return
+    while True:
+        nombre = input("\n📛 Nombre de la topología (solo letras y números): ").strip()
+        if not nombre.isalnum():
+            print("❌ Nombre no válido. Solo letras y números sin espacios.")
+            continue
+        break
 
     print("\n1. Crear VMs con Flavors\n2. Crear VMs una por una")
     modo = input("Seleccione un modo: ")
@@ -73,16 +93,33 @@ def crear_topologia():
     vms = []
     for i in range(num_vms):
         print(f"\n🖥️  Configuración de VM{i+1}")
-        cpu = input_num("⚙️  CPU: ")
-        ram = input_num("📦 RAM (MB): ")
-        disco = input_num("💾 Almacenamiento (MB): ")
         print("📂 Imagen disponible:")
         print("1. Cirros")
         print("2. Ubuntu")
-        img_sel = input("Seleccione imagen base (1/2): ")
-        if img_sel not in IMAGENES:
-            print("❌ Imagen no válida, se usará Cirros por defecto")
-            img_sel = "1"
+        while True:
+            img_sel = input("Seleccione imagen base (1/2): ")
+            if img_sel in IMAGENES:
+                break
+            print("❌ Imagen no válida. Seleccione 1 o 2.")
+
+        if img_sel == "1":  # Cirros
+            while True:
+                cpu = input_num("⚙️  CPU: ")
+                if validar_cirros_cpu(cpu):
+                    break
+            while True:
+                ram = input_num("📦 RAM (MB): ")
+                if validar_cirros_rango(ram, "RAM"):
+                    break
+            while True:
+                disco = input_num("💾 Almacenamiento (MB): ")
+                if validar_cirros_rango(disco, "Almacenamiento"):
+                    break
+        else: # Ubuntu
+            cpu = input_num("⚙️  CPU: ")
+            ram = input_num("📦 RAM (MB): ")
+            disco = input_num("💾 Almacenamiento (MB): ")
+
         vms.append((cpu, ram, disco, IMAGENES[img_sel]))
 
     print("\n🔗 Seleccione diseño de topología:")
