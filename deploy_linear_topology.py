@@ -10,6 +10,8 @@ import subprocess
 import time
 import threading
 import socket
+from configurar_internet import configurar_salida_internet_vlan
+
 
 # IPs de los workers
 WORKERS = {
@@ -40,7 +42,10 @@ def crear_red_vlan(nombre_topo, vlan_id):
     nombre_red = f"vlan{vlan_id}_{nombre_topo}"
     cidr = f"10.0.{vlan_id}.1/29"
     rango_dhcp = f"10.0.{vlan_id}.2,10.0.{vlan_id}.6"
+    # Ejecuta el script que levanta el bridge, netns, dnsmasq, etc.
     run_local(f"sudo python3 create_vlan_network.py {nombre_red} {vlan_id} {cidr} {rango_dhcp}")
+    # Configura veth entre el namespace y el host para salida a Internet
+    configurar_salida_internet_vlan(vlan_id, nombre_topo)
     return nombre_red
 
 def generar_nombre_tap(nombre_vm, vlan_id):
