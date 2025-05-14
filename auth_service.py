@@ -13,10 +13,11 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expirará en 240 minutos
 
 # Configuración para la conexión SSH
-SSH_HOST = "10.20.12.51"
+SSH_HOST = "10.20.12.61"
 SSH_PORT = 5801
 SSH_USER = "ubuntu"  # Usuario para conectar por SSH
-SSH_PASSWORD = "pablox123"  # Contraseña para conectar por SSH
+SSH_PASSWORD = "ubuntu"  # Contraseña para conectar por SSH
+password_bd = "root"
 
 # Crear la instancia de FastAPI
 app = FastAPI()
@@ -25,7 +26,7 @@ app = FastAPI()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Función para conectar al servidor y verificar el usuario en la base de datos
-def consultar_usuario_en_db(username, password):
+def consultar_usuario_en_db(username, contrasenia):
     try:
         # Conectar a través de SSH al Server 1
         ssh = paramiko.SSHClient()
@@ -33,14 +34,12 @@ def consultar_usuario_en_db(username, password):
         ssh.connect(SSH_HOST, port=SSH_PORT, username=SSH_USER, password=SSH_PASSWORD)
 
         # Consulta SQL para verificar el usuario y la contraseña
-        sql_query = f"SELECT * FROM usuarios WHERE user='{username}' AND password='{password}'"
-        stdin, stdout, stderr = ssh.exec_command(f"mysql -u root -p -e \"USE mydb; {sql_query}\"")
+        sql_query = f"SELECT * FROM usuarios WHERE user='{username}' AND password='{contrasenia}'"
+        command = f"sudo mysql -u root -p{password_bd} -e \"USE mydb; {sql_query}\""
+        stdin, stdout, stderr = ssh.exec_command(command)
 
         # Obtener el resultado de la consulta
         result = stdout.read().decode().strip()
-
-        # Debug: mostrar lo que se obtuvo
-        print(f"Resultado de la consulta: {result}")
 
         ssh.close()
 
@@ -52,7 +51,6 @@ def consultar_usuario_en_db(username, password):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al conectar con la base de datos: {e}")
-
 
 
 # Función para crear el token JWT
@@ -70,13 +68,13 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta = None):
 # Modelo de datos para recibir las credenciales del usuario
 class LoginModel(BaseModel):
     username: str
-    password: str
+    contrasenia: str
 
 # Endpoint para login y generación del token JWT
 @app.post("/login")
 def login_for_access_token(form_data: LoginModel):
     # Consultar en la base de datos si el usuario y la contraseña son correctos
-    result = consultar_usuario_en_db(form_data.username, form_data.password)
+    result = consultar_usuario_en_db(form_data.username, form_data.contrasenia)
     
     if result is None:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")

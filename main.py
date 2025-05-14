@@ -34,10 +34,10 @@ def login():
     usuario = input("👤 Usuario: ")
     clave = getpass.getpass("🔐 Contraseña: ")
 
-    # Realizar el POST al microservicio de autenticación
+    # Realizar el POST al microservicio de autenticación con JSON
     response = requests.post(
         AUTH_SERVICE_URL, 
-        data={"username": usuario, "password": clave}
+        json={"username": usuario, "contrasenia": clave}  # Cambié 'data' por 'json'
     )
 
     # Si el login es exitoso, obtenemos el token
@@ -161,9 +161,9 @@ def ver_logs():
     os.system("tail -n 30 /var/log/syslog")
 
 if __name__ == "__main__":
-    usuario, rol = login()
+    token = login()
     while True:
-        opcion = menu_principal()
+        opcion = menu_principal(token)
         if opcion == "1":
             crear_topologia()
         elif opcion == "2":
