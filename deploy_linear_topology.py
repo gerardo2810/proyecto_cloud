@@ -1,19 +1,16 @@
-# Nombre: deploy_linear_topology.py
-# Despliega una topología lineal de hasta 4 VMs en workers con recursos validados
-
+# deploy_linear_topology.py
 import sys
 import random
-import os, json
-from resource_checker import obtener_recursos_disponibles
-from remote_utils import run_remote, run_local
+import os
+import json
 import subprocess
 import time
 import threading
 import socket
+from resource_checker import obtener_recursos_disponibles
+from remote_utils import run_remote, run_local
 from configurar_internet import configurar_salida_internet_vlan
 
-
-# IPs de los workers
 WORKERS = {
     "worker1": "10.0.10.2",
     "worker2": "10.0.10.3",
@@ -26,25 +23,16 @@ SSH_TUNNELS = {
     "10.0.10.4": 5804
 }
 
-MAX_VMS = 4
-
-IMAGENES_DISPONIBLES = {
-    "1": "cirros-0.5.1-x86_64-disk.img",
-    "2": "ubuntu-22.04-server-cloudimg-amd64.img"
-}
-
 def generar_vlan_id():
     return random.randint(1, 255)
 
 def crear_red_vlan(nombre_topo, vlan_id):
     if vlan_id > 255:
-        raise ValueError("El ID de VLAN no puede ser mayor a 255 para mantener el formato 10.0.VLAN.0")
+        raise ValueError("El ID de VLAN no puede ser mayor a 255")
     nombre_red = f"vlan{vlan_id}_{nombre_topo}"
     cidr = f"10.0.{vlan_id}.1/29"
     rango_dhcp = f"10.0.{vlan_id}.2,10.0.{vlan_id}.6"
-    # Ejecuta el script que levanta el bridge, netns, dnsmasq, etc.
     run_local(f"sudo python3 create_vlan_network.py {nombre_red} {vlan_id} {cidr} {rango_dhcp}")
-    # Configura veth entre el namespace y el host para salida a Internet
     configurar_salida_internet_vlan(vlan_id, nombre_topo)
     return nombre_red
 
@@ -61,13 +49,13 @@ def puerto_vnc_abierto(puerto):
 def crear_tunel_ssh(vm_name, vnc_port, worker_ip):
     local_port = 5900 + vnc_port
     ssh_port = SSH_TUNNELS[worker_ip]
-    cmd = f"ssh -f -N -L {local_port}:localhost:{local_port} ubuntu@10.20.12.147 -p {ssh_port}"
+    cmd = f"ssh -f -N -L {local_port}:localhost:{local_port} ubuntu@10.20.12.51 -p {ssh_port}"
 
     def intentar_tunel():
         while True:
             if not puerto_vnc_abierto(vnc_port):
                 subprocess.run(cmd, shell=True)
-            time.sleep(1000)  
+            time.sleep(1000)
 
     threading.Thread(target=intentar_tunel, daemon=True).start()
 
@@ -82,16 +70,19 @@ def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids):
             "vlans": vlan_ids
         }, f, indent=2)
 
-def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
+def desplegar_topologia_lineal_from_json(payload: dict):
+    nombre_topo = payload["nombre"]
+    vms = payload["vms"]  # Lista de diccionarios con keys: cpu, ram, disco
+    imagenes = payload["imagenes"]  # Lista con nombre de imagen por VM
+
     num_vms = len(vms)
     recursos = obtener_recursos_disponibles(WORKERS)
     vms_info = []
     vlan_ids = []
-    
 
-    # Asignación de VMs a workers basados en disponibilidad
+    # Asignar recursos
     for i in range(num_vms):
-        cpu, ram, almacenamiento = vms[i]
+        cpu, ram, almacenamiento = vms[i]["cpu"], vms[i]["ram"], vms[i]["disco"]
         for nombre, ip in recursos.items():
             if ip['cpu'] >= cpu and ip['ram'] >= ram and ip['almacenamiento'] >= almacenamiento:
                 recursos[nombre]['cpu'] -= cpu
@@ -105,10 +96,9 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
                 })
                 break
         else:
-            print("❌ No hay suficientes recursos disponibles en los workers")
-            sys.exit(1)
+            raise RuntimeError("❌ No hay recursos disponibles en los workers")
 
-    # Crear VLANs e interfaces para conectar las VMs en cadena
+    # Crear red y asignar interfaces
     for i in range(num_vms - 1):
         vlan_id = generar_vlan_id()
         crear_red_vlan(nombre_topo, vlan_id)
@@ -120,32 +110,31 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
         vms_info[i]['interfaces'].append((vlan_id, tap1))
         vms_info[i + 1]['interfaces'].append((vlan_id, tap2))
 
-    # Crear las VMs remotamente con sus interfaces
+    # Crear VMs
     for idx, vm in enumerate(vms_info):
-        cpu, ram, almacenamiento = vms[idx]
+        cpu = vms[idx]["cpu"]
+        ram = vms[idx]["ram"]
+        disco = vms[idx]["disco"]
         args = [
             vm['nombre'],
             'br-int',
             str(vm['vnc']),
             str(cpu),
             str(ram),
-            str(almacenamiento),
+            str(disco),
             imagenes[idx]
         ]
-
-        for vlan_id, tap_name in vm['interfaces']:
-            args.append(f"{vlan_id}:{tap_name}")
-
-        arg_string = ' '.join(args)
-        run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {arg_string}")
+        for vlan_id, tap in vm['interfaces']:
+            args.append(f"{vlan_id}:{tap}")
+        run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {' '.join(args)}")
         crear_tunel_ssh(vm['nombre'], vm['vnc'], vm['worker'])
-    
 
     guardar_topologia(nombre_topo, "lineal", vms_info, vlan_ids)
 
-    print("\n🎯 PUCP DEPLOYER | Puertos VNC asignados:")
-    for vm in vms_info:
-        print(f"✅ {vm['nombre']} (Worker {vm['worker']}) → VNC :{vm['vnc']}")
-
-if __name__ == "__main__":
-    print("❌ Este script no debe ejecutarse directamente con parámetros fijos. Usa main.py para orquestación.")
+    return {
+        "mensaje": f"✅ Topología lineal '{nombre_topo}' desplegada con éxito.",
+        "vnc": [
+            {"vm": vm["nombre"], "worker": vm["worker"], "vnc": vm["vnc"]}
+            for vm in vms_info
+        ]
+    }

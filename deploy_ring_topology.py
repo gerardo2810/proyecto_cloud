@@ -1,15 +1,14 @@
-# Nombre: deploy_ring_topology.py
-# Despliega una topología en anillo de hasta 4 VMs en workers con recursos validados
-
 import sys
-import os, json
+import os
+import json
 import random
-from resource_checker import obtener_recursos_disponibles
-from remote_utils import run_remote, run_local
 import subprocess
 import time
 import threading
 import socket
+
+from resource_checker import obtener_recursos_disponibles
+from remote_utils import run_remote, run_local
 from configurar_internet import configurar_salida_internet_vlan
 
 WORKERS = {
@@ -24,19 +23,16 @@ SSH_TUNNELS = {
     "10.0.10.4": 5804
 }
 
-MAX_VMS = 4
-
 def generar_vlan_id():
     return random.randint(1, 255)
 
 def crear_red_vlan(nombre_topo, vlan_id):
     if vlan_id > 255:
-        raise ValueError("El ID de VLAN no puede ser mayor a 255 para mantener el formato 10.0.VLAN.0")
+        raise ValueError("El ID de VLAN no puede ser mayor a 255")
     nombre_red = f"vlan{vlan_id}_{nombre_topo}"
     cidr = f"10.0.{vlan_id}.1/29"
     rango_dhcp = f"10.0.{vlan_id}.2,10.0.{vlan_id}.6"
     run_local(f"sudo python3 create_vlan_network.py {nombre_red} {vlan_id} {cidr} {rango_dhcp}")
-    # Configura veth entre el namespace y el host para salida a Internet
     configurar_salida_internet_vlan(vlan_id, nombre_topo)
     return nombre_red
 
@@ -50,16 +46,15 @@ def puerto_vnc_abierto(puerto):
     except Exception:
         return False
 
-
 def crear_tunel_ssh(vm_name, vnc_port, worker_ip):
     local_port = 5900 + vnc_port
     ssh_port = SSH_TUNNELS[worker_ip]
-    cmd = f"ssh -f -N -L {local_port}:localhost:{local_port} ubuntu@10.20.12.147 -p {ssh_port}"
+    cmd = f"ssh -f -N -L {local_port}:localhost:{local_port} ubuntu@10.20.12.51 -p {ssh_port}"
 
     def intentar_tunel():
         while True:
             if not puerto_vnc_abierto(vnc_port):
-                print(f"🔗 Creando túnel SSH para {vm_name} en VNC :{vnc_port} => {cmd}")
+                print(f"🔗 Creando túnel SSH para {vm_name} en VNC :{vnc_port}")
                 subprocess.run(cmd, shell=True)
             time.sleep(1000)
 
@@ -76,14 +71,18 @@ def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids):
             "vlans": vlan_ids
         }, f, indent=2)
 
-def desplegar_topologia_anillo(nombre_topo, vms, imagenes):
+def desplegar_topologia_anillo_from_json(payload: dict):
+    nombre_topo = payload["nombre"]
+    vms = payload["vms"]  # lista de dicts: [{"cpu":..., "ram":..., "disco":...}]
+    imagenes = payload["imagenes"]  # lista: ["cirros-...", "ubuntu-..."]
+
     num_vms = len(vms)
     recursos = obtener_recursos_disponibles(WORKERS)
     vms_info = []
     vlan_ids = []
 
     for i in range(num_vms):
-        cpu, ram, almacenamiento = vms[i]
+        cpu, ram, almacenamiento = vms[i]["cpu"], vms[i]["ram"], vms[i]["disco"]
         for nombre, ip in recursos.items():
             if ip['cpu'] >= cpu and ip['ram'] >= ram and ip['almacenamiento'] >= almacenamiento:
                 recursos[nombre]['cpu'] -= cpu
@@ -97,8 +96,7 @@ def desplegar_topologia_anillo(nombre_topo, vms, imagenes):
                 })
                 break
         else:
-            print("❌ No hay suficientes recursos disponibles en los workers")
-            sys.exit(1)
+            raise RuntimeError("❌ No hay recursos disponibles en los workers")
 
     for i in range(num_vms):
         vm_actual = vms_info[i]
@@ -107,7 +105,7 @@ def desplegar_topologia_anillo(nombre_topo, vms, imagenes):
         vlan_id = generar_vlan_id()
         crear_red_vlan(nombre_topo, vlan_id)
         vlan_ids.append(vlan_id)
-        
+
         tap_actual = generar_nombre_tap(i+1, vlan_id)
         tap_siguiente = generar_nombre_tap((i + 2 if i + 2 <= num_vms else 1), vlan_id)
 
@@ -115,7 +113,7 @@ def desplegar_topologia_anillo(nombre_topo, vms, imagenes):
         vm_siguiente['interfaces'].append((vlan_id, tap_siguiente))
 
     for idx, vm in enumerate(vms_info):
-        cpu, ram, almacenamiento = vms[idx]
+        cpu, ram, almacenamiento = vms[idx]["cpu"], vms[idx]["ram"], vms[idx]["disco"]
         args = [
             vm['nombre'],
             'br-int',
@@ -128,12 +126,15 @@ def desplegar_topologia_anillo(nombre_topo, vms, imagenes):
         for vlan_id, tap_name in vm['interfaces']:
             args.append(f"{vlan_id}:{tap_name}")
 
-        arg_string = ' '.join(args)
-        run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {arg_string}")
+        run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {' '.join(args)}")
         crear_tunel_ssh(vm['nombre'], vm['vnc'], vm['worker'])
 
-    guardar_topologia(nombre_topo, "lineal", vms_info, vlan_ids)
+    guardar_topologia(nombre_topo, "anillo", vms_info, vlan_ids)
 
-    print("\n🎯 PUCP DEPLOYER | Puertos VNC asignados:")
-    for vm in vms_info:
-        print(f"✅ {vm['nombre']} (Worker {vm['worker']}) → VNC :{vm['vnc']}")
+    return {
+        "mensaje": f"✅ Topología en anillo '{nombre_topo}' desplegada con éxito.",
+        "vnc": [
+            {"vm": vm["nombre"], "worker": vm["worker"], "vnc": vm["vnc"]}
+            for vm in vms_info
+        ]
+    }
