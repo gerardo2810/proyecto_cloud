@@ -1,0 +1,133 @@
+{
+  "nombre": "arac",
+  "tipo": "unida",
+  "vms": [
+    {
+      "nombre": "vm1_ara1",
+      "worker": "10.0.10.2",
+      "vnc": 1,
+      "interfaces": [
+        [
+          14,
+          "1_14"
+        ],
+        {
+          "vlan": 100,
+          "tap": "t1001_84f2"
+        }
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_ara1",
+      "worker": "10.0.10.2",
+      "vnc": 2,
+      "interfaces": [
+        [
+          14,
+          "2_14"
+        ],
+        [
+          118,
+          "2_118"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm3_ara1",
+      "worker": "10.0.10.3",
+      "vnc": 1,
+      "interfaces": [
+        [
+          118,
+          "3_118"
+        ],
+        [
+          162,
+          "3_162"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm4_ara1",
+      "worker": "10.0.10.3",
+      "vnc": 2,
+      "interfaces": [
+        [
+          162,
+          "4_162"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm1_ara2",
+      "worker": "10.0.10.2",
+      "vnc": 3,
+      "interfaces": [
+        [
+          204,
+          "1_204"
+        ],
+        [
+          14,
+          "1_14"
+        ],
+        {
+          "vlan": 100,
+          "tap": "t1001_de79"
+        }
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_ara2",
+      "worker": "10.0.10.2",
+      "vnc": 4,
+      "interfaces": [
+        [
+          204,
+          "2_204"
+        ],
+        [
+          14,
+          "2_14"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    162,
+    100,
+    118,
+    204,
+    14
+  ]
+}

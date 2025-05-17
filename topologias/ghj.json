@@ -1,0 +1,50 @@
+{
+  "nombre": "ghj",
+  "tipo": "anillo",
+  "vms": [
+    {
+      "nombre": "vm1_ghj",
+      "worker": "10.0.10.2",
+      "vnc": 1,
+      "interfaces": [
+        [
+          188,
+          "1_188"
+        ],
+        [
+          88,
+          "1_88"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_ghj",
+      "worker": "10.0.10.3",
+      "vnc": 1,
+      "interfaces": [
+        [
+          188,
+          "2_188"
+        ],
+        [
+          88,
+          "2_88"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    188,
+    88
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "nombre": "ara2",
+  "tipo": "anillo",
+  "vms": [
+    {
+      "nombre": "vm1_ara2",
+      "worker": "10.0.10.2",
+      "vnc": 3,
+      "interfaces": [
+        [
+          204,
+          "1_204"
+        ],
+        [
+          14,
+          "1_14"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_ara2",
+      "worker": "10.0.10.2",
+      "vnc": 4,
+      "interfaces": [
+        [
+          204,
+          "2_204"
+        ],
+        [
+          14,
+          "2_14"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    204,
+    14
+  ]
+}

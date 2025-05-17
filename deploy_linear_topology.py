@@ -63,24 +63,49 @@ def crear_tunel_ssh(vm_name, vnc_port, worker_ip):
     ssh_port = SSH_TUNNELS[worker_ip]
     cmd = f"ssh -f -N -L {local_port}:localhost:{local_port} ubuntu@10.20.12.147 -p {ssh_port}"
 
-    def intentar_tunel():
-        while True:
-            if not puerto_vnc_abierto(vnc_port):
-                subprocess.run(cmd, shell=True)
-            time.sleep(1000)  
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", local_port))
+        except:
+            print(f"⚠️ El puerto local {local_port} ya está ocupado. No se creará el túnel.")
+            return
 
-    threading.Thread(target=intentar_tunel, daemon=True).start()
+    print(f"🔗 Creando túnel SSH para {vm_name} en VNC :{vnc_port}")
+    result = subprocess.run(cmd, shell=True)
+    if result.returncode != 0:
+        print(f"❌ Falló la creación del túnel SSH para {vm_name}")
+
 
 def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids):
     os.makedirs("topologias", exist_ok=True)
     path = f"topologias/{nombre_topo}.json"
+
+    # Asegurarse de que todas las VMs tienen campos completos
+    for vm in vms_info:
+        if "cpu" not in vm:
+            vm["cpu"] = 1
+        if "ram" not in vm:
+            vm["ram"] = 400
+        if "disco" not in vm:
+            vm["disco"] = 400
+        if "imagen" not in vm:
+            vm["imagen"] = "cirros-0.5.1-x86_64-disk.img"
+        if "carpeta" not in vm:
+            vm["carpeta"] = "/tmp"
+        if "interfaces" not in vm:
+            vm["interfaces"] = []  # Asegurarse que siempre exista
+
+    # Estructura de la topología
+    topologia = {
+        "nombre": nombre_topo,
+        "tipo": tipo,  # "lineal" o "anillo"
+        "vms": vms_info,
+        "vlans": vlan_ids
+    }
+
     with open(path, "w") as f:
-        json.dump({
-            "nombre": nombre_topo,
-            "tipo": tipo,
-            "vms": vms_info,
-            "vlans": vlan_ids
-        }, f, indent=2)
+        json.dump(topologia, f, indent=2)
+
 
 def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
     num_vms = len(vms)
@@ -100,7 +125,7 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
                 vms_info.append({
                     'nombre': f"vm{i+1}_{nombre_topo}",
                     'worker': WORKERS[nombre],
-                    'vnc': i + 1,
+                    'vnc': None,
                     'interfaces': []
                 })
                 break
@@ -137,7 +162,8 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
             args.append(f"{vlan_id}:{tap_name}")
 
         arg_string = ' '.join(args)
-        run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {arg_string}")
+        output = run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {arg_string}", capture_output=True)
+        vm['vnc'] = int(output.strip())        
         crear_tunel_ssh(vm['nombre'], vm['vnc'], vm['worker'])
     
 

@@ -1,0 +1,50 @@
+{
+  "nombre": "yui",
+  "tipo": "anillo",
+  "vms": [
+    {
+      "nombre": "vm1_yui",
+      "worker": "10.0.10.3",
+      "vnc": 2,
+      "interfaces": [
+        [
+          25,
+          "1_25"
+        ],
+        [
+          3,
+          "1_3"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_yui",
+      "worker": "10.0.10.4",
+      "vnc": 1,
+      "interfaces": [
+        [
+          25,
+          "2_25"
+        ],
+        [
+          3,
+          "2_3"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    25,
+    3
+  ]
+}
