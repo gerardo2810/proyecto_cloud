@@ -59,9 +59,17 @@ def login():
         )
 
         if response.status_code == 200:
-            token = response.json()["access_token"]
-            print(f"\n✅ Acceso concedido. Token recibido.")
-            return token
+            data = response.json()
+            token = data.get("access_token")
+            usuario = data.get("username")
+            rol = data.get("rol")
+
+            if token and usuario and rol:
+                print(f"\n✅ Acceso concedido. Token recibido.")
+                return usuario, rol, token
+            else:
+                print("\n⚠️ La respuesta no contiene los campos esperados.")
+                return None
         else:
             intentos -= 1
             print(f"\n❌ Credenciales incorrectas. Quedan {intentos} intento(s).\n")
@@ -218,7 +226,7 @@ def ver_logs():
     os.system("tail -n 30 /var/log/syslog")
 
 if __name__ == "__main__":
-    usuario, rol = login()
+    usuario, rol, token = login()
     while True:
         opcion = menu_principal()
         if opcion == "1":

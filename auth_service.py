@@ -17,7 +17,6 @@ SSH_HOST = "10.20.12.147"
 SSH_PORT = 5804
 SSH_USER = "ubuntu"  # Usuario para conectar por SSH
 SSH_PASSWORD = "ubuntu"  # Contraseña para conectar por SSH
-password_bd = "root"
 
 # Crear la instancia de FastAPI
 app = FastAPI()
@@ -28,30 +27,30 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Función para conectar al servidor y verificar el usuario en la base de datos
 def consultar_usuario_en_db(username, contrasenia):
     try:
-        # Conectar a través de SSH al Server 1
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(SSH_HOST, port=SSH_PORT, username=SSH_USER, password=SSH_PASSWORD)
 
-        # Consulta SQL para verificar el usuario y la contraseña
-        sql_query = f"SELECT * FROM usuarios WHERE user='{username}' AND password='{contrasenia}'"
-        command = f"sudo mysql -u root -p{password_bd} -e \"USE mydb; {sql_query}\""
+        sql_query = (
+            f"SELECT usuarios.user, usuarios.password, roles.rol "
+            f"FROM usuarios LEFT JOIN roles ON roles.idroles = usuarios.idrol "
+            f"WHERE usuarios.user = '{username}' AND usuarios.password = '{contrasenia}';"
+        )
+
+        command = f'sqlite3 -separator "|" /home/ubuntu/mydb.db "{sql_query}"'
         stdin, stdout, stderr = ssh.exec_command(command)
 
-        # Obtener el resultado de la consulta
         result = stdout.read().decode().strip()
+        error = stderr.read().decode().strip()
 
         ssh.close()
 
-        # Si no hay resultado, las credenciales son incorrectas
         if not result:
             return None
 
-        # Si la consulta devuelve algo, el usuario existe
-        return result
+        return result.split("|")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al conectar con la base de datos: {e}")
-
 
 # Función para crear el token JWT
 def create_access_token(data: dict, expires_delta: datetime.timedelta = None):
@@ -70,24 +69,24 @@ class LoginModel(BaseModel):
     username: str
     contrasenia: str
 
-# Endpoint para login y generación del token JWT
 @app.post("/login")
 def login_for_access_token(form_data: LoginModel):
-    # Consultar en la base de datos si el usuario y la contraseña son correctos
     result = consultar_usuario_en_db(form_data.username, form_data.contrasenia)
-    
+
     if result is None:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    # Extraer datos del usuario (por ejemplo, rol)
-    result_lines = result.split("\n")
-    user_data = result_lines[1].split("\t")  # Ajusta esto según la estructura de los resultados
-    rol = user_data[2]  # Suponiendo que el rol está en la tercera columna
+    username = result[0]  # Ej: 'Pablo'
+    rol = result[2]       # Ej: 'SuperAdministrador'
 
-    # Crear el token JWT
     access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": form_data.username, "rol": rol}, expires_delta=access_token_expires
+        data={"sub": username, "rol": rol}, expires_delta=access_token_expires
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": username,
+        "rol": rol
+    }
