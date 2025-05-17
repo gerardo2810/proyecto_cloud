@@ -1,0 +1,92 @@
+{
+  "nombre": "ert1",
+  "tipo": "anillo",
+  "vms": [
+    {
+      "nombre": "vm1_ert1",
+      "worker": "10.0.10.2",
+      "vnc": 3,
+      "interfaces": [
+        [
+          61,
+          "1_61"
+        ],
+        [
+          81,
+          "1_81"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_ert1",
+      "worker": "10.0.10.2",
+      "vnc": 4,
+      "interfaces": [
+        [
+          61,
+          "2_61"
+        ],
+        [
+          106,
+          "2_106"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm3_ert1",
+      "worker": "10.0.10.3",
+      "vnc": 1,
+      "interfaces": [
+        [
+          106,
+          "3_106"
+        ],
+        [
+          7,
+          "3_7"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm4_ert1",
+      "worker": "10.0.10.3",
+      "vnc": 2,
+      "interfaces": [
+        [
+          7,
+          "4_7"
+        ],
+        [
+          81,
+          "4_81"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    61,
+    106,
+    7,
+    81
+  ]
+}

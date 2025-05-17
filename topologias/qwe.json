@@ -1,0 +1,50 @@
+{
+  "nombre": "qwe",
+  "tipo": "anillo",
+  "vms": [
+    {
+      "nombre": "vm1_qwe",
+      "worker": "10.0.10.3",
+      "vnc": 3,
+      "interfaces": [
+        [
+          187,
+          "1_187"
+        ],
+        [
+          232,
+          "1_232"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_qwe",
+      "worker": "10.0.10.4",
+      "vnc": 1,
+      "interfaces": [
+        [
+          187,
+          "2_187"
+        ],
+        [
+          232,
+          "2_232"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 400,
+      "disco": 400,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    187,
+    232
+  ]
+}

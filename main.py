@@ -3,9 +3,12 @@ import sys
 import getpass
 import time
 import json
+import socket
+import subprocess
 from deploy_linear_topology import desplegar_topologia_lineal
 from deploy_ring_topology import desplegar_topologia_anillo
 from unir_topologia import unir_topologias
+
 from eliminar_topologia import eliminar_topologia
 
 HISTORIAL = []
@@ -16,7 +19,19 @@ USUARIOS = {
 
 IMAGENES = {
     "1": "cirros-0.5.1-x86_64-disk.img",
-    "2": "ubuntu-server-22.04.img"
+    "2": "focal-server-cloudimg-amd64.img"
+}
+
+SSH_TUNNELS = {
+    "10.0.10.2": 5802,
+    "10.0.10.3": 5803,
+    "10.0.10.4": 5804
+}
+
+WORKERS = {
+    "worker1": "10.0.10.2",
+    "worker2": "10.0.10.3",
+    "worker3": "10.0.10.4"
 }
 
 def clear():
@@ -73,6 +88,8 @@ def validar_cirros_rango(valor, campo):
         print(f"❌ Para Cirros, {campo} debe estar entre 300 y 700 MB")
         return False
     return True
+
+
 
 def crear_topologia():
     while True:
@@ -142,6 +159,9 @@ def crear_topologia():
         print("❌ Diseño no válido")
         return
 
+    
+
+
     HISTORIAL.append({"nombre": nombre, "vms": num_vms, "imagen": "Cirros", "diseño": tipo})
     print("\n✅ Topología desplegada exitosamente 🚀\n")
 
@@ -173,13 +193,14 @@ def ver_historial():
                         topo2 = HISTORIAL[otro_index]['nombre']
                         vm1 = input(f"Nombre de la VM en '{nombre_topo}' para unir: ")
                         vm2 = input(f"Nombre de la VM en '{topo2}' para unir: ")
-                        unir_topologias(str(index+1), str(otro_index+1), vm1, vm2)
+                        nombre_nueva = input("Ingrese el nombre de la nueva topología unida: ").strip()
+                        unir_topologias(nombre_topo, topo2, vm1, vm2, nombre_nueva)
+
                         print(f"✅ Topologías '{nombre_topo}' y '{topo2}' unidas.")
                     else:
                         print("❌ Índice no válido o topología duplicada")
                 else:
                     print("❌ Entrada inválida")
-
 
 def ver_recursos():
     print("\n📊 Recursos disponibles:")
