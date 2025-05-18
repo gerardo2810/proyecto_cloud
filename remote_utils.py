@@ -32,4 +32,3 @@ def run_remote(ip, cmd, capture_output=False):
     else:
         print(out)
         print(err)
-

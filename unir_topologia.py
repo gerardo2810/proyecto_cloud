@@ -46,11 +46,11 @@ def relanzar_vm(vm, imagen_default):
             vlan_id, tap = iface
         args.append(f"{vlan_id}:{tap}")
 
-    cmd = f"python3 create_vm_multi_iface.py {' '.join(args)}"
+    cmd = f"python3 /home/ubuntu/proyecto_cloud/create_vm_multi_iface.py {' '.join(args)}"
     run_remote(vm['worker'], cmd)
 
 def unir_topologias(json_topo1, json_topo2, vm1_name, vm2_name, nombre_nueva):
-    with open(f"topologias/{json_topo1}.json") as f1, open(f"topologias/{json_topo2}.json") as f2:
+    with open(f"/home/ubuntu/proyecto_cloud/topologias/{json_topo1}.json") as f1, open(f"/home/ubuntu/proyecto_cloud/topologias/{json_topo2}.json") as f2:
         topo1 = json.load(f1)
         topo2 = json.load(f2)
 
@@ -90,7 +90,7 @@ def unir_topologias(json_topo1, json_topo2, vm1_name, vm2_name, nombre_nueva):
     }
 
     os.makedirs("topologias", exist_ok=True)
-    with open(f"topologias/{nombre_nueva}.json", "w") as f:
+    with open(f"/home/ubuntu/proyecto_cloud/topologias/{nombre_nueva}.json", "w") as f:
         json.dump(nueva_topo, f, indent=2)
 
     print(f"\n🔁 Relanzando VMs {vm1_name} y {vm2_name} con nueva interfaz...")
@@ -101,7 +101,7 @@ def unir_topologias(json_topo1, json_topo2, vm1_name, vm2_name, nombre_nueva):
 
 if __name__ == "__main__":
     if len(sys.argv) != 6:
-        print("Uso: python3 unir_topologias.py topo1 topo2 vm1 vm2 nombre_nueva")
+        print("Uso: python3 /home/ubuntu/proyecto_cloud/unir_topologias.py topo1 topo2 vm1 vm2 nombre_nueva")
         sys.exit(1)
 
     unir_topologias(

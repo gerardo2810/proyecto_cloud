@@ -43,7 +43,7 @@ def crear_red_vlan(nombre_topo, vlan_id):
     cidr = f"10.0.{vlan_id}.1/29"
     rango_dhcp = f"10.0.{vlan_id}.2,10.0.{vlan_id}.6"
     # Ejecuta el script que levanta el bridge, netns, dnsmasq, etc.
-    run_local(f"sudo python3 create_vlan_network.py {nombre_red} {vlan_id} {cidr} {rango_dhcp}")
+    run_local(f"sudo python3 /home/ubuntu/proyecto_cloud/create_vlan_network.py {nombre_red} {vlan_id} {cidr} {rango_dhcp}")
     # Configura veth entre el namespace y el host para salida a Internet
     configurar_salida_internet_vlan(vlan_id, nombre_topo)
     return nombre_red
@@ -78,7 +78,7 @@ def crear_tunel_ssh(vm_name, vnc_port, worker_ip):
 
 def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids):
     os.makedirs("topologias", exist_ok=True)
-    path = f"topologias/{nombre_topo}.json"
+    path = f"/home/ubuntu/proyecto_cloud/topologias/{nombre_topo}.json"
 
     # Asegurarse de que todas las VMs tienen campos completos
     for vm in vms_info:
@@ -162,7 +162,7 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes):
             args.append(f"{vlan_id}:{tap_name}")
 
         arg_string = ' '.join(args)
-        output = run_remote(vm['worker'], f"python3 create_vm_multi_iface.py {arg_string}", capture_output=True)
+        output = run_remote(vm['worker'], f"python3 /home/ubuntu/proyecto_cloud/create_vm_multi_iface.py {arg_string}", capture_output=True)
         vm['vnc'] = int(output.strip())        
         crear_tunel_ssh(vm['nombre'], vm['vnc'], vm['worker'])
     

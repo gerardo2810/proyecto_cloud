@@ -55,7 +55,7 @@ def create_vlan_network(network_name, vlan_id, cidr, dhcp_range):
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
-        print("Uso: sudo python3 create_vlan_network.py <network_name> <vlan_id> <cidr> <rango_dhcp>")
+        print("Uso: sudo python3 /home/ubuntu/proyecto_cloud/create_vlan_network.py <network_name> <vlan_id> <cidr> <rango_dhcp>")
         sys.exit(1)
 
     network_name = sys.argv[1]

@@ -60,21 +60,19 @@ users:
     lock_passwd: false
     ssh_pwauth: true
     passwd: $6$rounds=4096$salt$uQhXUZiGOKkPqIqDTV89EemkoGPcLQ/Whg6cbJcEojkRT1KUgrNe9P4J3tGObh4Fq6aosxl0gIl7RtE2zIlVf.
-
-chpasswd:
-  list: |
-    ubuntu:ubuntu
-  expire: False
-
-runcmd:
-  - sed -i 's|http://.*.ubuntu.com/ubuntu|http://10.0.10.1|g' /etc/apt/sources.list
-  - apt update || true
-  - apt install -y tcpdump || true
-  - wget -O /tmp/arping.deb http://10.0.10.1/iputils-arping_20190709-3_amd64.deb || true
-  - dpkg -i /tmp/arping.deb || true
-  - apt install -f -y || true
+    
+package_update: true
+package_upgrade: true
+apt:
+  conf:
+    Acquire::ForceIPv4: "true"
+    Acquire::https::Verify-Peer: "false"
+    Acquire::http::Pipeline-Depth: "0"
+packages:
+  - arping
+  - tcpdump
+  - ca-certificates  
 """
-
     meta_data = f"""instance-id: {nombre_vm}
 local-hostname: {nombre_vm}
 """
@@ -90,10 +88,8 @@ local-hostname: {nombre_vm}
     run(f"genisoimage -output {seed_img} -volid cidata -joliet -rock {seed_dir}/user-data {seed_dir}/meta-data")
     return seed_img
 
-
-
-
 def crear_vm(nombre_vm, ovs_name, cpu, ram, almacenamiento, imagen, interfaces):
+
     idx_vm = extraer_idx_vm(nombre_vm)
 
     for vlan_id, tap in interfaces:
@@ -110,7 +106,9 @@ def crear_vm(nombre_vm, ovs_name, cpu, ram, almacenamiento, imagen, interfaces):
 
     # ✅ Lógica dinámica según tipo de imagen
     if is_ubuntu:
-        run(f"qemu-img convert -O qcow2 {base_img_path} {disco_path}")
+        run(f"qemu-img create -f qcow2 -b {base_img_path} {disco_path}")
+        run(f"qemu-img resize {disco_path} {almacenamiento}M")
+
     else:
         run(f"qemu-img create -f qcow2 -b {base_img_path} {disco_path} {almacenamiento}M")
 

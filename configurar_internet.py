@@ -53,9 +53,23 @@ def configurar_salida_internet_vlan(vlan_id, nombre_topologia):
 
     print(f"\n✅ Namespace {ns} y VMs en 10.0.{vlan_id}.0/29 tienen salida a Internet.\n")
 
+    # 10. Reglas de mangle para evitar fragmentación en tráfico TCP
+    run_cmd(f"sudo iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu")
+    run_cmd(f"sudo ip netns exec {ns} iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu")
+
+    # 11. Baja el MTU de las interfaces veth por seguridad
+    run_cmd(f"sudo ip link set {veth_br} mtu 1400")
+    run_cmd(f"sudo ip netns exec {ns} ip link set {veth_ns} mtu 1400")
+
+    run_cmd(f"sudo mkdir -p /etc/netns/{ns}")
+    run_cmd(f"sudo bash -c 'echo nameserver 8.8.8.8 > /etc/netns/{ns}/resolv.conf'")
+
+
+    
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Uso: python3 configurar_salida_internet.py <vlan_id> <nombre_topologia>")
+        print("Uso: python3 /home/ubuntu/proyecto_cloud/configurar_salida_internet.py <vlan_id> <nombre_topologia>")
         sys.exit(1)
 
     vlan_id = sys.argv[1]

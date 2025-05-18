@@ -11,6 +11,7 @@ from unir_topologia import unir_topologias
 
 from eliminar_topologia import eliminar_topologia
 
+
 HISTORIAL = []
 
 IMAGENES = {
@@ -38,6 +39,7 @@ def menu_principal(usuario, rol,token):
     
     if token:
         print("Bienvenido", usuario,rol)
+
 
         print("1️⃣  Crear Topología")
         print("2️⃣  Historial de topologías")
