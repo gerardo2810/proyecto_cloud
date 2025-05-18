@@ -1,0 +1,12 @@
+{
+  "cirros": {
+    "vcpus": 1,
+    "ram": 512,
+    "disk": 1
+  },
+  "ubuntu": {
+    "vcpus": 1,
+    "ram": 512,
+    "disk": 2.2
+  }
+}
