@@ -1,89 +1,26 @@
 import os
 import sys
 import getpass
-import requests
-import time
 import json
-import socket
-import subprocess
 from deploy_linear_topology import desplegar_topologia_lineal
 from deploy_ring_topology import desplegar_topologia_anillo
 from unir_topologia import unir_topologias
-
 from eliminar_topologia import eliminar_topologia
+from flavors_manager import obtener_flavor, listar_flavors
 
 HISTORIAL = []
-AUTH_SERVICE_URL = "http://127.0.0.1:8000/login"
+USUARIOS = {
+    "admin": {"password": "admin123", "rol": "Administrador"},
+    "super": {"password": "super123", "rol": "Superadministrador"},
+}
 
 IMAGENES = {
-    "1": "cirros-0.5.1-x86_64-disk.img",
-    "2": "focal-server-cloudimg-amd64.img"
-}
-
-SSH_TUNNELS = {
-    "10.0.10.2": 5802,
-    "10.0.10.3": 5803,
-    "10.0.10.4": 5804
-}
-
-WORKERS = {
-    "worker1": "10.0.10.2",
-    "worker2": "10.0.10.3",
-    "worker3": "10.0.10.4"
+    "1": {"nombre": "cirros-0.5.1-x86_64-disk.img", "flavor": "cirros"},
+    "2": {"nombre": "ubuntu-server-22.04.img", "flavor": "ubuntu"}
 }
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
-
-def login():
-    clear()
-    print("""
-    ██████╗ ██╗   ██╗ ██████╗██████╗ ██████╗ ███████╗██████╗ ██╗      ██████╗  ██╗   ██╗███████╗██████╗
-    ██╔══██╗██║   ██║██╔════╝██╔══██╗██╔══██╗██╔════╝██╔══██╗██║     ██╔═══██╗ ╚██╗ ██╔╝██╔════╝██╔══██╗  
-    ██████╔╝██║   ██║██║     ██████╔╝██║  ██║█████╗  ██████╔╝██║     ██║   ██║  ╚████╔╝ █████╗  ██████╔╝
-    ██╔═══╝ ██║   ██║██║     ██╔═══╝ ██║  ██║██╔══╝  ██╔═══╝ ██║     ██║   ██║   ╚██╔╝  ██╔══╝  ██╔══██╗ 
-    ██║     ╚██████╔╝╚██████╗██║     ██████╔╝███████╗██║     ███████╗╚██████╔╝    ██║   ███████╗██║  ██║ 
-    ╚═╝      ╚═════╝  ╚═════╝╚═╝     ╚═════╝ ╚══════╝╚═╝     ╚══════╝ ╚═════╝     ╚═╝   ╚══════╝╚═╝  ╚═╝ """)
-                                                                          
-    print("==== Bienvenido a PUCPDEPLOYER ====")
-
-    intentos = 3
-    while intentos > 0:
-        usuario = input("👤 Usuario: ")
-        clave = getpass.getpass("🔐 Contraseña: ")
-
-        # Realizar el POST al microservicio de autenticación con JSON
-        response = requests.post(
-            AUTH_SERVICE_URL, 
-            json={"username": usuario, "contrasenia": clave}
-        )
-
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("access_token")
-            usuario = data.get("username")
-            rol = data.get("rol")
-
-            if token and usuario and rol:
-                print(f"\n✅ Acceso concedido. Token recibido.")
-                return usuario, rol, token
-            else:
-                print("\n⚠️ La respuesta no contiene los campos esperados.")
-                return None
-        else:
-            intentos -= 1
-            print(f"\n❌ Credenciales incorrectas. Quedan {intentos} intento(s).\n")
-
-    print("\n❌ Se agotaron los intentos. Programa terminado.\n")
-    sys.exit(1)
-
-def menu_principal():
-    print("1️⃣  Crear Topología")
-    print("2️⃣  Historial de topologías")
-    print("3️⃣  Recursos de servidores")
-    print("4️⃣  Logs")
-    print("0️⃣  Salir")
-    return input("\nSeleccione una opción: ")
 
 def input_num(msg):
     while True:
@@ -92,27 +29,99 @@ def input_num(msg):
             return int(val)
         print("❗ Ingrese solo números.")
 
-def validar_cirros_cpu(cpu):
-    if cpu != 1:
-        print("❌ Para Cirros, CPU debe ser exactamente 1")
-        return False
-    return True
+def login():
+    clear()
+    print("""
+██████╗ ██╗   ██╗ ██████╗██████╗ ██████╗ ███████╗██████╗ ██╗     ███████╗██╗   ██╗
+██╔══██╗██║   ██║██╔════╝██╔══██╗██╔══██╗██╔════╝██╔══██╗██║     ██╔════╝╚██╗ ██╔╝
+██████╔╝██║   ██║██║     ██████╔╝██║  ██║█████╗  ██████╔╝██║     █████╗   ╚████╔╝ 
+██╔═══╝ ██║   ██║██║     ██╔═══╝ ██║  ██║██╔══╝  ██╔═══╝ ██║     ██╔══╝    ╚██╔╝  
+██║     ╚██████╔╝╚██████╗██║     ██████╔╝███████╗██║     ███████╗███████╗   ██║   
+╚═╝      ╚═════╝  ╚═════╝╚═╝     ╚═════╝ ╚══════╝╚═╝     ╚══════╝╚══════╝   ╚═╝   
+    """)
+    print("==== Bienvenido a PUCPDEPLOYER ====")
 
-def validar_cirros_rango(valor, campo):
-    if not (300 <= valor <= 700):
-        print(f"❌ Para Cirros, {campo} debe estar entre 300 y 700 MB")
-        return False
-    return True
+    intentos = 3
+    while intentos > 0:
+        usuario = input("👤 Usuario: ")
+        clave = getpass.getpass("🔐 Contraseña: ")
+        if usuario in USUARIOS and USUARIOS[usuario]["password"] == clave:
+            print(f"\n✅ Acceso concedido como {USUARIOS[usuario]['rol']}\n")
+            return usuario, USUARIOS[usuario]["rol"]
+        intentos -= 1
+        print(f"\n❌ Credenciales incorrectas. Quedan {intentos} intentos.\n")
 
+    print("\n❌ Se agotaron los intentos. Programa terminado.\n")
+    sys.exit(1)
 
+def crear_vm_manual(idx):
+    print(f"\n🖥️  Configuración de VM{idx+1} (Modo Manual)")
+    print("📂 Imagen disponible:")
+    for key, data in IMAGENES.items():
+        print(f"{key}. {data['nombre']}")
+    while True:
+        img_sel = input("Seleccione imagen base (1/2): ")
+        if img_sel in IMAGENES:
+            break
+        print("❌ Imagen no válida. Seleccione 1 o 2.")
+
+    if img_sel == "1":
+        while True:
+            cpu = input_num("⚙️  CPU: ")
+            if cpu == 1:
+                break
+            print("❌ Para Cirros, CPU debe ser 1")
+        while True:
+            ram = input_num("📦 RAM (MB): ")
+            if 300 <= ram <= 700:
+                break
+            print("❌ RAM para Cirros debe estar entre 300 y 700 MB")
+        while True:
+            disco = input_num("💾 Almacenamiento (MB): ")
+            if 300 <= disco <= 700:
+                break
+            print("❌ Disco para Cirros debe estar entre 300 y 700 MB")
+    else:
+        cpu = input_num("⚙️  CPU: ")
+        ram = input_num("📦 RAM (MB): ")
+        disco = input_num("💾 Almacenamiento (MB): ")
+
+    imagen = IMAGENES[img_sel]["nombre"]
+    return (cpu, ram, disco, imagen)
+
+def crear_vm_por_flavor(idx, flavors):
+    print(f"\n🖥️  VM{idx+1} - Selección de Flavor")
+    flavor_keys = list(flavors.keys())
+
+    for i, (nombre_flavor, spec) in enumerate(flavors.items(), 1):
+        print(f"{i}. {nombre_flavor}: {spec['vcpus']} CPU, {spec['ram']}MB RAM, {spec['disk']}GB Disco")
+
+    while True:
+        fsel = input(f"Seleccione flavor (1-{len(flavor_keys)}): ")
+        if fsel.isdigit() and 1 <= int(fsel) <= len(flavor_keys):
+            break
+        print("❌ Selección inválida.")
+
+    flavor_name = flavor_keys[int(fsel) - 1]
+    flavor = obtener_flavor(flavor_name)
+
+    print("📂 Imagen disponible:")
+    for key, data in IMAGENES.items():
+        print(f"{key}. {data['nombre']}")
+    while True:
+        img_sel = input("Seleccione imagen base (1/2): ")
+        if img_sel in IMAGENES:
+            break
+        print("❌ Imagen no válida.")
+
+    imagen = IMAGENES[img_sel]["nombre"]
+    return (flavor["vcpus"], flavor["ram"], flavor["disk"], imagen)
 
 def crear_topologia():
-    while True:
-        nombre = input("\n📛 Nombre de la topología (solo letras y números): ").strip()
-        if not nombre.isalnum():
-            print("❌ Nombre no válido. Solo letras y números sin espacios.")
-            continue
-        break
+    nombre = input("\n📛 Nombre de la topología (solo letras y números): ").strip()
+    if not nombre.isalnum():
+        print("❌ Nombre no válido. Solo letras y números sin espacios.")
+        return
 
     print("\n1. Crear VMs con Flavors\n2. Crear VMs una por una")
     modo = input("Seleccione un modo: ")
@@ -123,61 +132,37 @@ def crear_topologia():
         return
 
     vms = []
-    for i in range(num_vms):
-        print(f"\n🖥️  Configuración de VM{i+1}")
-        print("📂 Imagen disponible:")
-        print("1. Cirros")
-        print("2. Ubuntu")
-        while True:
-            img_sel = input("Seleccione imagen base (1/2): ")
-            if img_sel in IMAGENES:
-                break
-            print("❌ Imagen no válida. Seleccione 1 o 2.")
-
-        if img_sel == "1":  # Cirros
-            while True:
-                cpu = input_num("⚙️  CPU: ")
-                if validar_cirros_cpu(cpu):
-                    break
-            while True:
-                ram = input_num("📦 RAM (MB): ")
-                if validar_cirros_rango(ram, "RAM"):
-                    break
-            while True:
-                disco = input_num("💾 Almacenamiento (MB): ")
-                if validar_cirros_rango(disco, "Almacenamiento"):
-                    break
-        else: # Ubuntu
-            cpu = input_num("⚙️  CPU: ")
-            ram = input_num("📦 RAM (MB): ")
-            disco = input_num("💾 Almacenamiento (MB): ")
-
-        vms.append((cpu, ram, disco, IMAGENES[img_sel]))
+    if modo == "1":
+        flavors = listar_flavors()
+        for i in range(num_vms):
+            vms.append(crear_vm_por_flavor(i, flavors))
+    elif modo == "2":
+        for i in range(num_vms):
+            vms.append(crear_vm_manual(i))
+    else:
+        print("❌ Modo inválido")
+        return
 
     print("\n🔗 Seleccione diseño de topología:")
     print("1. Lineal")
     print("2. Anillo")
     diseno = input("Diseño: ")
 
+    imagenes = [img for (_, _, _, img) in vms]
+    vms_info = [(cpu, ram, disco) for (cpu, ram, disco, _) in vms]
+
     print("\n⚙️  Desplegando topología...\n")
     if diseno == "1":
-        imagenes = [img for (_, _, _, img) in vms]
-        vms_info = [(cpu, ram, disco) for (cpu, ram, disco, _) in vms]
         desplegar_topologia_lineal(nombre, vms_info, imagenes)
         tipo = "Lineal"
     elif diseno == "2":
-        imagenes = [img for (_, _, _, img) in vms]
-        vms_info = [(cpu, ram, disco) for (cpu, ram, disco, _) in vms]
         desplegar_topologia_anillo(nombre, vms_info, imagenes)
         tipo = "Anillo"
     else:
         print("❌ Diseño no válido")
         return
 
-    
-
-
-    HISTORIAL.append({"nombre": nombre, "vms": num_vms, "imagen": "Cirros", "diseño": tipo})
+    HISTORIAL.append({"nombre": nombre, "vms": num_vms, "imagen": "Flavors" if modo == "1" else "Manual", "diseño": tipo})
     print("\n✅ Topología desplegada exitosamente 🚀\n")
 
 def ver_historial():
@@ -197,8 +182,8 @@ def ver_historial():
 
             if accion == "1":
                 eliminar_topologia(nombre_topo)
-                print(f"✅ Topología '{nombre_topo}' borrada.")
                 HISTORIAL.pop(index)
+                print(f"✅ Topología '{nombre_topo}' borrada.")
 
             elif accion == "2":
                 otro = input("Ingrese número de la otra topología a unir: ")
@@ -208,9 +193,7 @@ def ver_historial():
                         topo2 = HISTORIAL[otro_index]['nombre']
                         vm1 = input(f"Nombre de la VM en '{nombre_topo}' para unir: ")
                         vm2 = input(f"Nombre de la VM en '{topo2}' para unir: ")
-                        nombre_nueva = input("Ingrese el nombre de la nueva topología unida: ").strip()
-                        unir_topologias(nombre_topo, topo2, vm1, vm2, nombre_nueva)
-
+                        unir_topologias(str(index+1), str(otro_index+1), vm1, vm2)
                         print(f"✅ Topologías '{nombre_topo}' y '{topo2}' unidas.")
                     else:
                         print("❌ Índice no válido o topología duplicada")
@@ -221,12 +204,28 @@ def ver_recursos():
     print("\n📊 Recursos disponibles:")
     os.system("python3 resource_checker.py")
 
+def ver_flavors():
+    print("\n📦 Flavors disponibles:")
+    flavors = listar_flavors()
+    for nombre, specs in flavors.items():
+        print(f"- {nombre}: {specs['vcpus']} CPU, {specs['ram']}MB RAM, {specs['disk']}GB Disco")
+
 def ver_logs():
     print("\n📝 ==== Últimos logs de ejecución ====")
     os.system("tail -n 30 /var/log/syslog")
 
+def menu_principal():
+    print("\n📋 Menú Principal")
+    print("1️⃣  Crear Topología")
+    print("2️⃣  Ver Historial de Topologías")
+    print("3️⃣  Ver Recursos de Servidores")
+    print("4️⃣  Ver Flavors Disponibles")
+    print("5️⃣  Ver Logs")
+    print("0️⃣  Salir")
+    return input("\nSeleccione una opción: ")
+
 if __name__ == "__main__":
-    usuario, rol, token = login()
+    usuario, rol = login()
     while True:
         opcion = menu_principal()
         if opcion == "1":
@@ -236,6 +235,8 @@ if __name__ == "__main__":
         elif opcion == "3":
             ver_recursos()
         elif opcion == "4":
+            ver_flavors()
+        elif opcion == "5":
             ver_logs()
         elif opcion == "0":
             print("👋 Saliendo...")
