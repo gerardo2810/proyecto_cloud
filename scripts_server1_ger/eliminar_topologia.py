@@ -2,6 +2,8 @@
 import json
 import os
 from remote_utils import run_remote, run_local
+from custom_logger import registrar_log
+
 TOPOLOGIAS_PATH = "topologias_guardadas"
 
 def eliminar_topologia(nombre):

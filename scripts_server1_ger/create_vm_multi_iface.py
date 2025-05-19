@@ -5,6 +5,8 @@ import re
 import socket
 import random
 import signal
+from custom_logger import registrar_log
+
 
 def run(cmd):
     print(f"➡️ Ejecutando: {cmd}")
@@ -60,23 +62,43 @@ users:
     lock_passwd: false
     ssh_pwauth: true
     passwd: $6$rounds=4096$salt$uQhXUZiGOKkPqIqDTV89EemkoGPcLQ/Whg6cbJcEojkRT1KUgrNe9P4J3tGObh4Fq6aosxl0gIl7RtE2zIlVf.
-    
+
 package_update: true
 package_upgrade: true
 apt:
   conf:
     Acquire::ForceIPv4: "true"
     Acquire::https::Verify-Peer: "false"
+    Acquire::Retries: "3"
     Acquire::http::Pipeline-Depth: "0"
+    Acquire::http::Timeout: "30"
+
 packages:
-  - arping
+  - ca-certificates
   - tcpdump
-  - ca-certificates  
+  - net-tools
+  - iputils-arping
+
+growpart:
+  mode: auto
+  devices: ['/']
+  ignore_growroot_disabled: false
+
+runcmd:
+  - [ cloud-init-per, once, growroot, growpart, /dev/sda, 1 ]
+  - resize2fs /dev/sda1
+  - touch /etc/cloud/cloud-init.disabled
+  - rm -rf /etc/cloud/cloud.cfg.d/* /var/lib/cloud/*
+  - apt purge -y snapd linux-virtual linux-image-virtual linux-image-5.4.0-216-generic || true
+  - rm -rf /snap /var/snap /var/lib/snapd ~/snap
+  - dpkg --purge --force-all linux-image-virtual linux-image-5.4.0-216-generic || true
+  - apt --fix-broken install -y || true
+  - apt autoremove -y || true
+  - apt clean
 """
     meta_data = f"""instance-id: {nombre_vm}
 local-hostname: {nombre_vm}
 """
-
     seed_dir = f"/tmp/seed_{nombre_vm}"
     os.makedirs(seed_dir, exist_ok=True)
     with open(f"{seed_dir}/user-data", "w") as f:
@@ -88,10 +110,10 @@ local-hostname: {nombre_vm}
     run(f"genisoimage -output {seed_img} -volid cidata -joliet -rock {seed_dir}/user-data {seed_dir}/meta-data")
     return seed_img
 
+
+
 def crear_vm(nombre_vm, ovs_name, cpu, ram, almacenamiento, imagen, interfaces):
-
     idx_vm = extraer_idx_vm(nombre_vm)
-
     for vlan_id, tap in interfaces:
         eliminar_tap(tap, ovs_name)
         run(f"sudo ip tuntap add mode tap name {tap}")
@@ -104,9 +126,9 @@ def crear_vm(nombre_vm, ovs_name, cpu, ram, almacenamiento, imagen, interfaces):
     base_img_path = f"/var/lib/libvirt/images/{imagen}"
     is_ubuntu = "ubuntu" in imagen.lower() or "focal" in imagen.lower()
 
-    # ✅ Lógica dinámica según tipo de imagen
     if is_ubuntu:
-        run(f"qemu-img convert -O qcow2 {base_img_path} {disco_path}")
+        run(f"qemu-img create -f qcow2 -b {base_img_path} {disco_path}")
+        run(f"qemu-img resize {disco_path} {almacenamiento}M")
     else:
         run(f"qemu-img create -f qcow2 -b {base_img_path} {disco_path} {almacenamiento}M")
 
@@ -137,7 +159,7 @@ def crear_vm(nombre_vm, ovs_name, cpu, ram, almacenamiento, imagen, interfaces):
         print(f"❌ Error al lanzar la VM {nombre_vm}: {e}")
         sys.exit(1)
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     if len(sys.argv) < 8:
         sys.exit(1)
 

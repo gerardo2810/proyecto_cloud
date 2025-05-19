@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import os
+from custom_logger import registrar_log
 import signal
 
 def run(cmd, check=True):

@@ -2,6 +2,8 @@
 # Retorna los recursos disponibles de los workers remotos
 
 import paramiko
+from custom_logger import registrar_log
+
 
 usuario = 'ubuntu'
 password = 'ubuntu'

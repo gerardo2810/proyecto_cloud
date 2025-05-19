@@ -7,6 +7,8 @@ import sys
 from remote_utils import run_remote
 from configurar_internet import configurar_salida_internet_vlan
 from create_vlan_network import create_vlan_network
+from custom_logger import registrar_log
+
 
 def generar_vlan_id(existentes):
     while True:

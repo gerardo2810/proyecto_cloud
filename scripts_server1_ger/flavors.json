@@ -1,0 +1,10 @@
+{
+  "Rojo": {
+    "cpu": 1,
+    "ram": 500,
+    "disco": 1000,
+    "imagen": "cirros-0.5.1-x86_64-disk.img",
+    "usuario_creador": "Pablo",
+    "rol_creador": "Administrador"
+  }
+}

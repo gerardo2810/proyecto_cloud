@@ -10,6 +10,7 @@ import subprocess
 import time
 import threading
 import socket
+from custom_logger import registrar_log
 from configurar_internet import configurar_salida_internet_vlan
 
 
@@ -82,11 +83,20 @@ def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids, usuario, rol):
 
     # Asegurarse de que todas las VMs tienen campos completos
     for vm in vms_info:
-        if "interfaces" not in vm:
-            vm["interfaces"] = []
+        if "cpu" not in vm:
+            vm["cpu"] = 1
+        if "ram" not in vm:
+            vm["ram"] = 400
+        if "disco" not in vm:
+            vm["disco"] = 400
+        if "imagen" not in vm:
+            vm["imagen"] = "cirros-0.5.1-x86_64-disk.img"
         if "carpeta" not in vm:
             vm["carpeta"] = "/tmp"
+        if "interfaces" not in vm:
+            vm["interfaces"] = []  # Asegurarse que siempre exista
 
+    # Estructura de la topología
     topologia = {
         "nombre": nombre_topo,
         "tipo": tipo,
@@ -99,12 +109,14 @@ def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids, usuario, rol):
     with open(path, "w") as f:
         json.dump(topologia, f, indent=2)
 
+
 def desplegar_topologia_lineal(nombre_topo, vms, imagenes, usuario, rol):
     num_vms = len(vms)
     recursos = obtener_recursos_disponibles(WORKERS)
     vms_info = []
     vlan_ids = []
     
+
     # Asignación de VMs a workers basados en disponibilidad
     for i in range(num_vms):
         cpu, ram, almacenamiento = vms[i]
@@ -147,7 +159,7 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes, usuario, rol):
         args = [
             vm['nombre'],
             'br-int',
-            str(vm['vnc']) if vm['vnc'] else "0",
+            str(vm['vnc']),
             str(cpu),
             str(ram),
             str(almacenamiento),
@@ -159,8 +171,9 @@ def desplegar_topologia_lineal(nombre_topo, vms, imagenes, usuario, rol):
 
         arg_string = ' '.join(args)
         output = run_remote(vm['worker'], f"python3 /home/ubuntu/proyecto_cloud/create_vm_multi_iface.py {arg_string}", capture_output=True)
-        vm['vnc'] = int(output.strip())
+        vm['vnc'] = int(output.strip())        
         crear_tunel_ssh(vm['nombre'], vm['vnc'], vm['worker'])
+    
 
     guardar_topologia(nombre_topo, "lineal", vms_info, vlan_ids, usuario, rol)
 

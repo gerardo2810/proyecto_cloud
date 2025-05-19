@@ -7,6 +7,7 @@ import subprocess
 import time
 import threading
 import socket
+from custom_logger import registrar_log
 from configurar_internet import configurar_salida_internet_vlan
 
 WORKERS = {
@@ -62,11 +63,20 @@ def guardar_topologia(nombre_topo, tipo, vms_info, vlan_ids, usuario, rol):
 
     # Asegurarse de que todas las VMs tienen campos completos
     for vm in vms_info:
-        if "interfaces" not in vm:
-            vm["interfaces"] = []
+        if "cpu" not in vm:
+            vm["cpu"] = 1
+        if "ram" not in vm:
+            vm["ram"] = 400
+        if "disco" not in vm:
+            vm["disco"] = 400
+        if "imagen" not in vm:
+            vm["imagen"] = "cirros-0.5.1-x86_64-disk.img"
         if "carpeta" not in vm:
             vm["carpeta"] = "/tmp"
+        if "interfaces" not in vm:
+            vm["interfaces"] = []  # Asegurarse que siempre exista
 
+    # Estructura de la topología
     topologia = {
         "nombre": nombre_topo,
         "tipo": tipo,
@@ -142,7 +152,7 @@ def desplegar_topologia_anillo(nombre_topo, vms, imagenes, usuario, rol):
         vm['vnc'] = int(output.strip())
         crear_tunel_ssh(vm['nombre'], vm['vnc'], vm['worker'])
 
-    guardar_topologia(nombre_topo, "lineal", vms_info, vlan_ids, usuario, rol)
+    guardar_topologia(nombre_topo, "anillo", vms_info, vlan_ids, usuario, rol)
 
     print("\n🎯 PUCP DEPLOYER | Puertos VNC asignados:")
     for vm in vms_info:

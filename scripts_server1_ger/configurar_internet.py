@@ -1,5 +1,8 @@
 import subprocess
 import sys
+from custom_logger import registrar_log
+
+
 
 def run_cmd(cmd, check=True):
     print(f"➡️ Ejecutando: {cmd}")

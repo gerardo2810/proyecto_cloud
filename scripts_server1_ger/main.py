@@ -1,6 +1,7 @@
 import os
 import sys
 import getpass
+import requests
 import time
 import json
 import socket
@@ -8,14 +9,12 @@ import subprocess
 from deploy_linear_topology import desplegar_topologia_lineal
 from deploy_ring_topology import desplegar_topologia_anillo
 from unir_topologia import unir_topologias
-
 from eliminar_topologia import eliminar_topologia
+from flavor_manager import crear_flavor, listar_flavors, obtener_flavor, cargar_flavors, eliminar_flavor, editar_flavor
+from custom_logger import registrar_log
 
 HISTORIAL = []
-USUARIOS = {
-    "admin": {"password": "admin123", "rol": "Administrador"},
-    "super": {"password": "super123", "rol": "Superadministrador"},
-}
+AUTH_SERVICE_URL = "http://127.0.0.1:8000/login"
 
 IMAGENES = {
     "1": "cirros-0.5.1-x86_64-disk.img",
@@ -40,25 +39,42 @@ def clear():
 def login():
     clear()
     print("""
-██████╗ ██╗   ██╗ ██████╗██████╗ ██████╗ ███████╗██████╗ ██╗     ███████╗██╗   ██╗
-██╔══██╗██║   ██║██╔════╝██╔══██╗██╔══██╗██╔════╝██╔══██╗██║     ██╔════╝╚██╗ ██╔╝
-██████╔╝██║   ██║██║     ██████╔╝██║  ██║█████╗  ██████╔╝██║     █████╗   ╚████╔╝ 
-██╔═══╝ ██║   ██║██║     ██╔═══╝ ██║  ██║██╔══╝  ██╔═══╝ ██║     ██╔══╝    ╚██╔╝  
-██║     ╚██████╔╝╚██████╗██║     ██████╔╝███████╗██║     ███████╗███████╗   ██║   
-╚═╝      ╚═════╝  ╚═════╝╚═╝     ╚═════╝ ╚══════╝╚═╝     ╚══════╝╚══════╝   ╚═╝   
-    """)
+    ██████╗ ██╗   ██╗ ██████╗██████╗ ██████╗ ███████╗██████╗ ██╗      ██████╗  ██╗   ██╗███████╗██████╗
+    ██╔══██╗██║   ██║██╔════╝██╔══██╗██╔══██╗██╔════╝██╔══██╗██║     ██╔═══██╗ ╚██╗ ██╔╝██╔════╝██╔══██╗  
+    ██████╔╝██║   ██║██║     ██████╔╝██║  ██║█████╗  ██████╔╝██║     ██║   ██║  ╚████╔╝ █████╗  ██████╔╝
+    ██╔═══╝ ██║   ██║██║     ██╔═══╝ ██║  ██║██╔══╝  ██╔═══╝ ██║     ██║   ██║   ╚██╔╝  ██╔══╝  ██╔══██╗ 
+    ██║     ╚██████╔╝╚██████╗██║     ██████╔╝███████╗██║     ███████╗╚██████╔╝    ██║   ███████╗██║  ██║ 
+    ╚═╝      ╚═════╝  ╚═════╝╚═╝     ╚═════╝ ╚══════╝╚═╝     ╚══════╝ ╚═════╝     ╚═╝   ╚══════╝╚═╝  ╚═╝ """)
+                                                                          
     print("==== Bienvenido a PUCPDEPLOYER ====")
-    
+
     intentos = 3
     while intentos > 0:
         usuario = input("👤 Usuario: ")
         clave = getpass.getpass("🔐 Contraseña: ")
-        if usuario in USUARIOS and USUARIOS[usuario]["password"] == clave:
-            print(f"\n✅ Acceso concedido como {USUARIOS[usuario]['rol']}\n")
-            return usuario, USUARIOS[usuario]["rol"]
-        intentos -= 1
-        print(f"\n❌ Credenciales incorrectas. Quedan {intentos} intentos.\n")
-    
+
+        # Realizar el POST al microservicio de autenticación con JSON
+        response = requests.post(
+            AUTH_SERVICE_URL, 
+            json={"username": usuario, "contrasenia": clave}
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            token = data.get("access_token")
+            usuario = data.get("username")
+            rol = data.get("rol")
+
+            if token and usuario and rol:
+                print(f"\n✅ Acceso concedido. Token recibido.")
+                return usuario, rol, token
+            else:
+                print("\n⚠️ La respuesta no contiene los campos esperados.")
+                return None
+        else:
+            intentos -= 1
+            print(f"\n❌ Credenciales incorrectas. Quedan {intentos} intento(s).\n")
+
     print("\n❌ Se agotaron los intentos. Programa terminado.\n")
     sys.exit(1)
 
@@ -67,6 +83,7 @@ def menu_principal():
     print("2️⃣  Historial de topologías")
     print("3️⃣  Recursos de servidores")
     print("4️⃣  Logs")
+    print("5️⃣  Gestionar Flavors")
     print("0️⃣  Salir")
     return input("\nSeleccione una opción: ")
 
@@ -76,6 +93,54 @@ def input_num(msg):
         if val.isdigit():
             return int(val)
         print("❗ Ingrese solo números.")
+
+def generar_tabla_flavors(flavors_dict):
+    tabla = "\n📦 Flavors disponibles:\n"
+    tabla += "-" * 75 + "\n"
+    tabla += f"{'Nombre':<20} {'CPU':<5} {'RAM (MB)':<10} {'Disco (MB)':<12} Imagen\n"
+    tabla += "-" * 75 + "\n"
+    for nombre, datos in flavors_dict.items():
+        tabla += f"{nombre:<20} {datos['cpu']:<5} {datos['ram']:<10} {datos['disco']:<12} {datos['imagen']}\n"
+    tabla += "-" * 75 + "\n"
+    return tabla  
+
+def gestionar_flavors():
+    while True:
+        print("\n📦 Gestión de Flavors:")
+        print("1. Listar flavors")
+        print("2. Crear nuevo flavor")
+        print("3. Eliminar flavor")
+        print("4. Editar flavor")
+        print("0. Volver")
+        op = input("Seleccione una opción: ")
+
+        if op == "1":
+            listar_flavors()
+        elif op == "2":
+            nombre = input("Nombre del flavor: ").strip()
+            cpu = input_num("CPU: ")
+            ram = input_num("RAM (MB): ")
+            disco = input_num("Disco (MB): ")
+            print("1. Cirros\n2. Ubuntu")
+            img_sel = input("Imagen base (1/2): ")
+            imagen = IMAGENES.get(img_sel, "cirros-0.5.1-x86_64-disk.img")
+            crear_flavor(nombre, cpu, ram, disco, imagen)
+        elif op == "3":
+            nombre = input("🔴 Nombre del flavor a eliminar: ").strip()
+            eliminar_flavor(nombre)
+        elif op == "4":
+            nombre = input("✏️ Nombre del flavor a editar: ").strip()
+            cpu = input_num("Nuevo CPU: ") or None
+            ram = input_num("Nuevo RAM (MB): ") or None
+            disco = input_num("Nuevo Disco (MB): ") or None
+            print("1. Cirros\n2. Ubuntu\nEnter para mantener imagen actual")
+            img_sel = input("Nueva imagen base (1/2): ").strip()
+            imagen = IMAGENES.get(img_sel) if img_sel in IMAGENES else None
+            editar_flavor(nombre, cpu, ram, disco, imagen)
+        elif op == "0":
+            break
+        else:
+            print("❌ Opción inválida.")
 
 def validar_cirros_cpu(cpu):
     if cpu != 1:
@@ -108,36 +173,51 @@ def crear_topologia():
         return
 
     vms = []
-    for i in range(num_vms):
-        print(f"\n🖥️  Configuración de VM{i+1}")
-        print("📂 Imagen disponible:")
-        print("1. Cirros")
-        print("2. Ubuntu")
-        while True:
-            img_sel = input("Seleccione imagen base (1/2): ")
-            if img_sel in IMAGENES:
-                break
-            print("❌ Imagen no válida. Seleccione 1 o 2.")
-
-        if img_sel == "1":  # Cirros
+    if modo == "1":
+        flavors_dict = cargar_flavors()
+        if not flavors_dict:
+            print("❌ No hay flavors definidos.")
+            return
+        print(generar_tabla_flavors(flavors_dict))
+        for i in range(num_vms):
+            print(f"\n🖥️  Selección de flavor para VM{i+1}")
             while True:
+                nombre_flavor = input("👉 Ingrese nombre del flavor a usar: ").strip()
+                flavor = obtener_flavor(nombre_flavor)
+                if flavor:
+                    break
+                print("❌ Flavor no válido. Intente nuevamente.")
+            vms.append((flavor['cpu'], flavor['ram'], flavor['disco'], flavor['imagen']))
+    else:
+        for i in range(num_vms):
+            print(f"\n🖥️  Configuración de VM{i+1}")
+            print("📂 Imagen disponible:")
+            print("1. Cirros")
+            print("2. Ubuntu")
+            while True:
+                img_sel = input("Seleccione imagen base (1/2): ")
+                if img_sel in IMAGENES:
+                    break
+                print("❌ Imagen no válida. Seleccione 1 o 2.")
+
+            if img_sel == "1":  # Cirros
+                while True:
+                    cpu = input_num("⚙️  CPU: ")
+                    if validar_cirros_cpu(cpu):
+                        break
+                while True:
+                    ram = input_num("📦 RAM (MB): ")
+                    if validar_cirros_rango(ram, "RAM"):
+                        break
+                while True:
+                    disco = input_num("💾 Almacenamiento (MB): ")
+                    if validar_cirros_rango(disco, "Almacenamiento"):
+                        break
+            else: # Ubuntu
                 cpu = input_num("⚙️  CPU: ")
-                if validar_cirros_cpu(cpu):
-                    break
-            while True:
                 ram = input_num("📦 RAM (MB): ")
-                if validar_cirros_rango(ram, "RAM"):
-                    break
-            while True:
                 disco = input_num("💾 Almacenamiento (MB): ")
-                if validar_cirros_rango(disco, "Almacenamiento"):
-                    break
-        else: # Ubuntu
-            cpu = input_num("⚙️  CPU: ")
-            ram = input_num("📦 RAM (MB): ")
-            disco = input_num("💾 Almacenamiento (MB): ")
-
-        vms.append((cpu, ram, disco, IMAGENES[img_sel]))
+                vms.append((cpu, ram, disco, IMAGENES[img_sel]))
 
     print("\n🔗 Seleccione diseño de topología:")
     print("1. Lineal")
@@ -165,42 +245,89 @@ def crear_topologia():
     HISTORIAL.append({"nombre": nombre, "vms": num_vms, "imagen": "Cirros", "diseño": tipo})
     print("\n✅ Topología desplegada exitosamente 🚀\n")
 
+
 def ver_historial():
-    print("\n🗂️  ==== Historial de Topologías ====")
-    for i, topo in enumerate(HISTORIAL):
-        print(f"{i+1}. 📌 {topo['nombre']} ({topo['diseño']}) - {topo['vms']} VMs - {topo['imagen']}")
+    if not HISTORIAL:
+        print("📭 No hay topologías registradas.")
+        return
+    
+    mostrar_historial_simple()
 
-    op = input("\nIngrese el número de la topología para acciones (borrar/unir) o Enter para volver: ").strip()
-    if op.isdigit():
-        index = int(op) - 1
-        if 0 <= index < len(HISTORIAL):
-            nombre_topo = HISTORIAL[index]['nombre']
-            print(f"\n🔧 Acciones para topología '{nombre_topo}':")
-            print("1. Borrar topología")
-            print("2. Unir con otra topología")
-            accion = input("Seleccione acción: ").strip()
+    while True:
+        op = input("\nIngrese el número de la topología para acciones (borrar/unir) o Enter para volver: ").strip()
+        if not op:
+            return
+        if op.isdigit() and 1 <= int(op) <= len(HISTORIAL):
+            index = int(op) - 1
+            break
+        print("❌ Número inválido. Intente nuevamente.")
 
-            if accion == "1":
-                eliminar_topologia(nombre_topo)
-                print(f"✅ Topología '{nombre_topo}' borrada.")
-                HISTORIAL.pop(index)
+    nombre_topo = HISTORIAL[index]['nombre']
+    vms_topo = HISTORIAL[index]['vms']
 
-            elif accion == "2":
-                otro = input("Ingrese número de la otra topología a unir: ")
-                if otro.isdigit():
-                    otro_index = int(otro) - 1
-                    if 0 <= otro_index < len(HISTORIAL) and otro_index != index:
-                        topo2 = HISTORIAL[otro_index]['nombre']
-                        vm1 = input(f"Nombre de la VM en '{nombre_topo}' para unir: ")
-                        vm2 = input(f"Nombre de la VM en '{topo2}' para unir: ")
-                        nombre_nueva = input("Ingrese el nombre de la nueva topología unida: ").strip()
-                        unir_topologias(nombre_topo, topo2, vm1, vm2, nombre_nueva)
+    print(f"\n🔧 Acciones para topología '{nombre_topo}':")
+    print("1. Borrar topología")
+    print("2. Unir con otra topología")
 
-                        print(f"✅ Topologías '{nombre_topo}' y '{topo2}' unidas.")
-                    else:
-                        print("❌ Índice no válido o topología duplicada")
+    while True:
+        accion = input("Seleccione acción (1/2): ").strip()
+        if accion in ["1", "2"]:
+            break
+        print("❌ Opción no válida. Ingrese 1 o 2.")
+
+    if accion == "1":
+        HISTORIAL.pop(index)
+        eliminar_topologia(nombre_topo)
+        print(f"✅ Topología '{nombre_topo}' borrada.")
+        return
+
+    elif accion == "2":
+        while True:
+            otro = input("Ingrese número de la otra topología a unir: ").strip()
+            if otro.isdigit():
+                otro_index = int(otro) - 1
+                if 0 <= otro_index < len(HISTORIAL) and otro_index != index:
+                    break
+            print("❌ Índice no válido o topología duplicada. Intente nuevamente.")
+
+        topo2 = HISTORIAL[otro_index]['nombre']
+        vms_topo2 = HISTORIAL[otro_index]['vms']
+
+        while True:
+            vm1 = input(f"Nombre de la VM en '{nombre_topo}' para unir (ej: vm1_{nombre_topo}): ").strip()
+            if re.match(r'^vm\d+_' + re.escape(nombre_topo) + r'$', vm1):
+                num_vm1 = int(vm1[2:].split('_')[0])
+                if 1 <= num_vm1 <= vms_topo:
+                    break
+            print(f"❌ VM inválida. Debe estar en formato 'vmX_{nombre_topo}' y X debe ser una VM válida.")
+
+        while True:
+            vm2 = input(f"Nombre de la VM en '{topo2}' para unir (ej: vm1_{topo2}): ").strip()
+            if re.match(r'^vm\d+_' + re.escape(topo2) + r'$', vm2):
+                num_vm2 = int(vm2[2:].split('_')[0])
+                if 1 <= num_vm2 <= vms_topo2:
+                    break
+            print(f"❌ VM inválida. Debe estar en formato 'vmX_{topo2}' y X debe ser una VM válida.")
+
+        while True:
+            nombre_nueva = input("Ingrese el nombre de la nueva topología unida (máx 10 caracteres): ").strip()
+            if len(nombre_nueva) <= 10:
+                if not any(t['nombre'] == nombre_nueva for t in HISTORIAL):
+                    break
                 else:
-                    print("❌ Entrada inválida")
+                    print("❌ Ya existe una topología con ese nombre.")
+            else:
+                print("❌ El nombre no debe exceder 10 caracteres.")
+
+        unir_topologias(nombre_topo, topo2, vm1, vm2, nombre_nueva)
+        print(f"✅ Topologías '{nombre_topo}' y '{topo2}' unidas como '{nombre_nueva}'.")
+    
+def mostrar_historial_simple():
+    print("\n🗂️  ==== Historial de Topologías ====")
+    print(f"{'#':<4} {'Nombre':<12} {'Diseño':<10} {'VMs':<4} {'Imagen':<20}")
+    print("-" * 50)
+    for i, topo in enumerate(HISTORIAL):
+        print(f"{i+1:<4} {topo['nombre']:<12} {topo['diseño']:<10} {topo['vms']:<4} {topo['imagen']:<20}")
 
 def ver_recursos():
     print("\n📊 Recursos disponibles:")
@@ -211,7 +338,7 @@ def ver_logs():
     os.system("tail -n 30 /var/log/syslog")
 
 if __name__ == "__main__":
-    usuario, rol = login()
+    usuario, rol, token = login()
     while True:
         opcion = menu_principal()
         if opcion == "1":
@@ -222,6 +349,8 @@ if __name__ == "__main__":
             ver_recursos()
         elif opcion == "4":
             ver_logs()
+        elif opcion == "5":
+            gestionar_flavors()
         elif opcion == "0":
             print("👋 Saliendo...")
             break

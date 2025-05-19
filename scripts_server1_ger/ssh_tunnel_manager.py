@@ -2,6 +2,8 @@
 
 from sshtunnel import SSHTunnelForwarder
 import threading
+from custom_logger import registrar_log
+
 
 GATEWAY_IP = "10.20.12.147"
 SSH_USER = "ubuntu"
