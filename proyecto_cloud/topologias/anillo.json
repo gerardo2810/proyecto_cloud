@@ -1,0 +1,94 @@
+{
+  "nombre": "anillo",
+  "tipo": "anillo",
+  "vms": [
+    {
+      "nombre": "vm1_anillo",
+      "worker": "10.0.10.2",
+      "vnc": 3,
+      "interfaces": [
+        [
+          162,
+          "vm1_v162_0"
+        ],
+        [
+          184,
+          "vm1_v184_1"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 500,
+      "disco": 1800,
+      "imagen": "focal-server-cloudimg-amd64.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_anillo",
+      "worker": "10.0.10.3",
+      "vnc": 3,
+      "interfaces": [
+        [
+          162,
+          "vm2_v162_1"
+        ],
+        [
+          73,
+          "vm2_v73_0"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 500,
+      "disco": 1800,
+      "imagen": "focal-server-cloudimg-amd64.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm3_anillo",
+      "worker": "10.0.10.4",
+      "vnc": 1,
+      "interfaces": [
+        [
+          73,
+          "vm3_v73_1"
+        ],
+        [
+          229,
+          "vm3_v229_0"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 500,
+      "disco": 1000,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm4_anillo",
+      "worker": "10.0.10.2",
+      "vnc": 4,
+      "interfaces": [
+        [
+          229,
+          "vm4_v229_1"
+        ],
+        [
+          184,
+          "vm4_v184_0"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 500,
+      "disco": 1800,
+      "imagen": "focal-server-cloudimg-amd64.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    162,
+    73,
+    229,
+    184
+  ],
+  "usuario_creador": "Pablo",
+  "rol_creador": "Administrador"
+}
