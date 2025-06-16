@@ -1,0 +1,43 @@
+{
+  "nombre": "test1",
+  "tipo": "lineal",
+  "vms": [
+    {
+      "nombre": "vm1_test1",
+      "worker": "10.0.10.2",
+      "vnc": 1,
+      "interfaces": [
+        [
+          253,
+          "1_253"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 500,
+      "disco": 1000,
+      "imagen": "cirros-0.5.1-x86_64-disk.img",
+      "carpeta": "/tmp"
+    },
+    {
+      "nombre": "vm2_test1",
+      "worker": "10.0.10.3",
+      "vnc": 1,
+      "interfaces": [
+        [
+          253,
+          "2_253"
+        ]
+      ],
+      "cpu": 1,
+      "ram": 500,
+      "disco": 1800,
+      "imagen": "focal-server-cloudimg-amd64.img",
+      "carpeta": "/tmp"
+    }
+  ],
+  "vlans": [
+    253
+  ],
+  "usuario_creador": "Pablo",
+  "rol_creador": "Administrador"
+}
